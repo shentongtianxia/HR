@@ -9,6 +9,15 @@ export interface Education {
   school: string;
   degree: string;
   period: string;
+  description?: string;
+}
+
+export interface AIEvaluation {
+  score: number;
+  summary: string;
+  pros: string[];
+  cons: string[];
+  suggestion: string;
 }
 
 export interface CandidateDetails {
@@ -31,4 +40,5 @@ export interface Candidate {
   tags: string[];
   summary: string;
   details: CandidateDetails;
+  aiEvaluation: AIEvaluation;
 }
