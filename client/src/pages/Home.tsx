@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Candidate, candidates } from "@/lib/data";
+import { candidates } from "@/lib/data";
+import { Candidate } from "@/types";
 import { Filter, LayoutGrid, List, Search, SlidersHorizontal } from "lucide-react";
 import { useState } from "react";
 

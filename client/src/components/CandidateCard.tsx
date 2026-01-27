@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Candidate } from "@/lib/data";
+import { Candidate } from "@/types";
 import { Briefcase, MapPin, Phone } from "lucide-react";
 
 interface CandidateCardProps {
@@ -41,7 +41,7 @@ export function CandidateCard({ candidate, onClick }: CandidateCardProps) {
       
       <CardContent className="pb-2">
         <div className="flex flex-wrap gap-2 mb-3">
-          {candidate.tags.map((tag) => (
+          {candidate.tags.map((tag: string) => (
             <Badge key={tag} variant="outline" className="bg-secondary/50 text-secondary-foreground border-transparent">
               {tag}
             </Badge>
