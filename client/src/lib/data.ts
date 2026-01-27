@@ -87,5 +87,119 @@ export const candidates: Candidate[] = [
       ],
       skills: ["供应链销售", "客户关系维护", "招投标管理", "物流方案设计", "成本控制"]
     }
+  },
+  {
+    id: "zhong-1",
+    name: "钟先生",
+    avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&h=150&fit=crop&crop=faces",
+    title: "销售经理",
+    experience: "7年经验",
+    education: "本科",
+    location: "广州",
+    salary: "1.6-2万/月",
+    status: "active",
+    matchScore: 92,
+    tags: ["锂电池辅材", "技术型销售", "TOP10客户资源", "化工材料"],
+    summary: "7年经验，从售前技术支持转型销售，具备扎实的技术功底。熟悉锂电辅材（导电剂、粘接剂等），拥有EVB、EVE等行业头部客户资源。",
+    details: {
+      workHistory: [
+        {
+          company: "上海海逸科贸有限公司",
+          role: "销售经理",
+          period: "2024.11-至今",
+          description: "负责锂电池华南区域客户开发与维护，服务行业TOP10客户；销售国外高端化学产品（IMERYS, Ashland, LG化学等）。"
+        },
+        {
+          company: "广州集泰化工股份有限公司",
+          role: "售前技术支持工程师",
+          period: "2019.07-2023.10",
+          description: "负责相关技术支持工作，积累了深厚的产品技术知识。"
+        }
+      ],
+      education: [
+        {
+          school: "仲恺农业工程学院",
+          degree: "本科 | 化学工程与工艺",
+          period: "2017.09-2021.06"
+        }
+      ],
+      skills: ["技术营销", "大客户维护", "化工产品知识", "市场拓展", "商务谈判"]
+    }
+  },
+  {
+    id: "dong-1",
+    name: "董先生",
+    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=faces",
+    title: "销售经理",
+    experience: "10年经验",
+    education: "本科",
+    location: "绵阳",
+    salary: "1.5-2.3万/月",
+    status: "active",
+    matchScore: 90,
+    tags: ["正极材料", "行业大厂", "高稳定性", "英语专业"],
+    summary: "10年经验，深耕锂电池正极材料领域。在四川新锂想能源（行业大厂）任职8年，稳定性极高。英语专业背景，具备潜在的海外市场开发能力。",
+    details: {
+      workHistory: [
+        {
+          company: "四川新锂想能源科技有限责任公司",
+          role: "销售经理",
+          period: "2018.01-至今",
+          description: "从事七年锂电池正极材料销售工作，积累了丰富的行业资源和销售经验。"
+        }
+      ],
+      education: [
+        {
+          school: "武汉工程科技学院",
+          degree: "本科 | 英语",
+          period: "2010.09-2014.06"
+        }
+      ],
+      skills: ["正极材料销售", "长期客户维护", "行业资源积累", "英语商务沟通"]
+    }
+  },
+  {
+    id: "chen-1",
+    name: "陈先生",
+    avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&h=150&fit=crop&crop=faces",
+    title: "销售主管",
+    experience: "12年经验",
+    education: "大专",
+    location: "广州",
+    salary: "1.2-1.8万/月",
+    status: "active",
+    matchScore: 89,
+    tags: ["锂电池PACK", "主机厂配套", "渠道销售", "工程机械"],
+    summary: "12年经验，精通锂电池PACK定制及主机厂配套。拥有丰富的工程机械及相关零配件销售经验，手握主机厂配套客户资源。有车，适应出差。",
+    details: {
+      workHistory: [
+        {
+          company: "广东锂华新能源科技有限公司",
+          role: "销售主管",
+          period: "2024.03-至今",
+          description: "开发主机厂及品牌方合作；管理销售团队；负责锂电池产品定制及标准产品销售；拓展高尔夫球车、电摩等应用市场。"
+        },
+        {
+          company: "惠州市乐亿通科技有限公司",
+          role: "销售工程师",
+          period: "2022.02-2024.02",
+          description: "开发新能源锂电池PACK定制客户；协调内部开发需求；参与产品调试测试；促成批量合作。"
+        },
+        {
+          company: "上海宏信设备工程有限公司",
+          role: "销售工程师",
+          period: "2018.02-2021.11",
+          description: "负责机械设备配件销售；开发市场，挖掘客户需求；解答疑问，成交客户并回款。"
+        }
+      ],
+      education: [
+        {
+          school: "广东机电职业技术学院",
+          degree: "大专 | 汽车服务工程",
+          period: "2012.09-2015.06"
+        }
+      ],
+      skills: ["PACK定制销售", "主机厂开发", "团队管理", "渠道拓展", "项目拜访"]
+    }
   }
 ];
