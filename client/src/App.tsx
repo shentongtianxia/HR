@@ -11,8 +11,7 @@ import SimpleView from "@/pages/SimpleView";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Home} />
-      <Route path="/simple" component={SimpleView} />
+      <Route path="/" component={SimpleView} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
