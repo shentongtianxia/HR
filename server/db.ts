@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, like, or, and, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, candidates, workExperiences, educations, projects, skills, aiEvaluations } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,139 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+/**
+ * 获取候选人列表，支持搜索和筛选
+ */
+export async function getCandidates(params?: {
+  search?: string;
+  position?: string;
+  minExperience?: number;
+  maxExperience?: number;
+  status?: string;
+}) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get candidates: database not available");
+    return [];
+  }
+
+  let query = db.select().from(candidates);
+
+  const conditions = [];
+
+  if (params?.search) {
+    conditions.push(
+      or(
+        like(candidates.name, `%${params.search}%`),
+        like(candidates.email, `%${params.search}%`),
+        like(candidates.position, `%${params.search}%`)
+      )
+    );
+  }
+
+  if (params?.position) {
+    conditions.push(like(candidates.position, `%${params.position}%`));
+  }
+
+  if (params?.minExperience !== undefined) {
+    conditions.push(sql`${candidates.yearsOfExperience} >= ${params.minExperience}`);
+  }
+
+  if (params?.maxExperience !== undefined) {
+    conditions.push(sql`${candidates.yearsOfExperience} <= ${params.maxExperience}`);
+  }
+
+  if (params?.status) {
+    conditions.push(eq(candidates.status, params.status as any));
+  }
+
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions)) as any;
+  }
+
+  const result = await query.orderBy(sql`${candidates.matchScore} DESC`);
+  return result;
+}
+
+/**
+ * 获取候选人详细信息（包括关联数据）
+ */
+export async function getCandidateDetail(candidateId: number) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get candidate detail: database not available");
+    return null;
+  }
+
+  const candidate = await db.select().from(candidates).where(eq(candidates.id, candidateId)).limit(1);
+  if (candidate.length === 0) return null;
+
+  const workExp = await db.select().from(workExperiences).where(eq(workExperiences.candidateId, candidateId));
+  const edu = await db.select().from(educations).where(eq(educations.candidateId, candidateId));
+  const proj = await db.select().from(projects).where(eq(projects.candidateId, candidateId));
+  const skillList = await db.select().from(skills).where(eq(skills.candidateId, candidateId));
+
+  return {
+    candidate: candidate[0],
+    workExperiences: workExp,
+    educations: edu,
+    projects: proj,
+    skills: skillList,
+  };
+}
+
+/**
+ * 获取候选人的技能列表
+ */
+export async function getCandidateSkills(candidateId: number) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get candidate skills: database not available");
+    return [];
+  }
+
+  return await db.select().from(skills).where(eq(skills.candidateId, candidateId));
+}
+
+/**
+ * 获取AI评价
+ */
+export async function getAiEvaluation(candidateId: number) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot get AI evaluation: database not available");
+    return null;
+  }
+
+  const result = await db.select().from(aiEvaluations).where(eq(aiEvaluations.candidateId, candidateId)).limit(1);
+  return result.length > 0 ? result[0] : null;
+}
+
+/**
+ * 创建或更新AI评价
+ */
+export async function upsertAiEvaluation(evaluation: {
+  candidateId: number;
+  overallScore: string;
+  strengths: string;
+  risks: string;
+  suggestions: string;
+  detailedAnalysis: string;
+}) {
+  const db = await getDb();
+  if (!db) {
+    console.warn("[Database] Cannot upsert AI evaluation: database not available");
+    return;
+  }
+
+  await db.insert(aiEvaluations).values(evaluation).onDuplicateKeyUpdate({
+    set: {
+      overallScore: evaluation.overallScore,
+      strengths: evaluation.strengths,
+      risks: evaluation.risks,
+      suggestions: evaluation.suggestions,
+      detailedAnalysis: evaluation.detailedAnalysis,
+      updatedAt: new Date(),
+    },
+  });
+}

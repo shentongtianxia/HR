@@ -2,9 +2,11 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
+import { z } from "zod";
+import { getCandidates, getCandidateDetail, getCandidateSkills, getAiEvaluation, upsertAiEvaluation } from "./db";
+import { invokeLLM } from "./_core/llm";
 
 export const appRouter = router({
-    // if you need to use socket.io, read and register route in server/_core/index.ts, all api should start with '/api/' so that the gateway can route correctly
   system: systemRouter,
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
@@ -17,12 +19,179 @@ export const appRouter = router({
     }),
   }),
 
-  // TODO: add feature routers here, e.g.
-  // todo: router({
-  //   list: protectedProcedure.query(({ ctx }) =>
-  //     db.getUserTodos(ctx.user.id)
-  //   ),
-  // }),
+  candidates: router({
+    /**
+     * 获取候选人列表，支持搜索和筛选
+     */
+    list: publicProcedure
+      .input(
+        z.object({
+          search: z.string().optional(),
+          position: z.string().optional(),
+          minExperience: z.number().optional(),
+          maxExperience: z.number().optional(),
+          status: z.string().optional(),
+        }).optional()
+      )
+      .query(async ({ input }) => {
+        const candidateList = await getCandidates(input);
+        
+        // 为每个候选人获取技能标签
+        const candidatesWithSkills = await Promise.all(
+          candidateList.map(async (candidate) => {
+            const skillList = await getCandidateSkills(candidate.id);
+            return {
+              ...candidate,
+              skills: skillList,
+            };
+          })
+        );
+
+        return candidatesWithSkills;
+      }),
+
+    /**
+     * 获取候选人详细信息
+     */
+    detail: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return await getCandidateDetail(input.id);
+      }),
+
+    /**
+     * 获取AI评价
+     */
+    evaluation: publicProcedure
+      .input(z.object({ candidateId: z.number() }))
+      .query(async ({ input }) => {
+        return await getAiEvaluation(input.candidateId);
+      }),
+
+    /**
+     * 生成AI评价
+     */
+    generateEvaluation: publicProcedure
+      .input(z.object({ candidateId: z.number() }))
+      .mutation(async ({ input }) => {
+        // 获取候选人详细信息
+        const detail = await getCandidateDetail(input.candidateId);
+        if (!detail) {
+          throw new Error("候选人不存在");
+        }
+
+        const { candidate, workExperiences, educations, projects, skills } = detail;
+
+        // 构建候选人信息提示词
+        const prompt = `
+请作为一名资深HR，对以下候选人进行全面评价：
+
+**基本信息：**
+- 姓名：${candidate.name}
+- 应聘职位：${candidate.position}
+- 工作年限：${candidate.yearsOfExperience}年
+- 所在地：${candidate.location}
+- 期望薪资：${candidate.expectedSalary}
+- 个人总结：${candidate.summary}
+
+**工作经历：**
+${workExperiences.map(w => `
+- ${w.company} | ${w.position} | ${w.startDate} - ${w.endDate}
+  ${w.description}
+  成就：${w.achievements}
+`).join('\n')}
+
+**教育背景：**
+${educations.map(e => `
+- ${e.school} | ${e.degree} | ${e.major} | ${e.startDate} - ${e.endDate}
+`).join('\n')}
+
+**项目经验：**
+${projects.map(p => `
+- ${p.name} | ${p.role} | ${p.startDate} - ${p.endDate}
+  ${p.description}
+  技术栈：${p.technologies}
+  成果：${p.achievements}
+`).join('\n')}
+
+**技能标签：**
+${skills.map(s => `${s.name}(${s.level})`).join('、')}
+
+请按照以下JSON格式返回评价结果：
+{
+  "overallScore": "综合评分（0-100的数字）",
+  "strengths": ["核心优势1", "核心优势2", "核心优势3"],
+  "risks": ["潜在风险1", "潜在风险2"],
+  "suggestions": ["面试建议1", "面试建议2", "面试建议3"],
+  "detailedAnalysis": "详细分析文本，200字左右"
+}
+`;
+
+        // 调用LLM生成评价
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: "你是一名资深HR专家，擅长候选人评估和面试建议。请客观、专业地分析候选人的优势和风险。",
+            },
+            {
+              role: "user",
+              content: prompt,
+            },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "candidate_evaluation",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  overallScore: { type: "string", description: "综合评分0-100" },
+                  strengths: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "核心优势列表",
+                  },
+                  risks: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "潜在风险列表",
+                  },
+                  suggestions: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "面试建议列表",
+                  },
+                  detailedAnalysis: { type: "string", description: "详细分析" },
+                },
+                required: ["overallScore", "strengths", "risks", "suggestions", "detailedAnalysis"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const content = response.choices[0]?.message?.content;
+        if (!content || typeof content !== 'string') {
+          throw new Error("AI评价生成失败");
+        }
+
+        const evaluation = JSON.parse(content);
+
+        // 保存到数据库
+        await upsertAiEvaluation({
+          candidateId: input.candidateId,
+          overallScore: evaluation.overallScore,
+          strengths: JSON.stringify(evaluation.strengths),
+          risks: JSON.stringify(evaluation.risks),
+          suggestions: JSON.stringify(evaluation.suggestions),
+          detailedAnalysis: evaluation.detailedAnalysis,
+        });
+
+        return evaluation;
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;
