@@ -12,11 +12,13 @@ import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BatchImportDialog } from "@/components/BatchImportDialog";
+import { InterviewRecords } from "@/components/InterviewRecords";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Home() {
   const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [importFormData, setImportFormData] = useState({
     name: "",
@@ -85,17 +87,28 @@ export default function Home() {
   // 筛选候选人
   const filteredCandidates = useMemo(() => {
     if (!candidates) return [];
-    if (!searchTerm) return candidates;
-
-    const term = searchTerm.toLowerCase();
-    return candidates.filter(
-      (c) =>
-        c.name.toLowerCase().includes(term) ||
-        c.position.toLowerCase().includes(term) ||
-        c.email?.toLowerCase().includes(term) ||
-        c.skills.some((s) => s.name.toLowerCase().includes(term))
-    );
-  }, [candidates, searchTerm]);
+    
+    let result = candidates;
+    
+    // 状态筛选
+    if (statusFilter && statusFilter !== "all") {
+      result = result.filter((c) => c.status === statusFilter);
+    }
+    
+    // 搜索过滤
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(
+        (c) =>
+          c.name.toLowerCase().includes(term) ||
+          c.position.toLowerCase().includes(term) ||
+          c.email?.toLowerCase().includes(term) ||
+          c.skills.some((s) => s.name.toLowerCase().includes(term))
+      );
+    }
+    
+    return result;
+  }, [candidates, searchTerm, statusFilter]);
 
   // 自动选择第一个候选人
   if (candidates && candidates.length > 0 && !selectedCandidateId) {
@@ -276,8 +289,8 @@ export default function Home() {
       <div className="flex-1 flex overflow-hidden">
         {/* 左侧：候选人列表 */}
         <div className="w-80 border-r bg-card flex flex-col">
-          {/* 搜索框 */}
-          <div className="p-4 border-b">
+          {/* 搜索框和筛选器 */}
+          <div className="p-4 border-b space-y-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
@@ -287,6 +300,19 @@ export default function Home() {
                 className="pl-9"
               />
             </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger>
+                <SelectValue placeholder="筛选状态" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">所有状态</SelectItem>
+                <SelectItem value="pending">待审核</SelectItem>
+                <SelectItem value="reviewing">审核中</SelectItem>
+                <SelectItem value="interviewed">已面试</SelectItem>
+                <SelectItem value="offered">已录用</SelectItem>
+                <SelectItem value="rejected">已拒绝</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {/* 候选人列表 */}
@@ -543,6 +569,14 @@ export default function Home() {
                         </Card>
                       ))}
                     </div>
+                  </section>
+                )
+}
+
+                {/* 面试记录 */}
+                {selectedCandidateId && (
+                  <section className="border-t pt-6">
+                    <InterviewRecords candidateId={selectedCandidateId} />
                   </section>
                 )}
               </div>

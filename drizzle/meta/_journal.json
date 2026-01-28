@@ -15,6 +15,13 @@
       "when": 1769584629196,
       "tag": "0001_medical_gamora",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1769589131388,
+      "tag": "0002_rare_marvel_zombies",
+      "breakpoints": true
     }
   ]
 }

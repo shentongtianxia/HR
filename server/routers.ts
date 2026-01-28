@@ -367,6 +367,77 @@ ${skills.map(s => `${s.name}(${s.level})`).join('、')}
         };
       }),
   }),
+
+  /**
+   * 面试记录路由
+   */
+  interviews: router({
+    /**
+     * 获取候选人的所有面试记录
+     */
+    list: publicProcedure
+      .input(z.object({ candidateId: z.number() }))
+      .query(async ({ input }) => {
+        const { getInterviewsByCandidateId } = await import("./db");
+        return await getInterviewsByCandidateId(input.candidateId);
+      }),
+
+    /**
+     * 创建面试记录
+     */
+    create: publicProcedure
+      .input(
+        z.object({
+          candidateId: z.number(),
+          interviewDate: z.date(),
+          interviewer: z.string().optional(),
+          interviewType: z.enum(["phone", "video", "onsite", "technical", "hr"]).default("onsite"),
+          feedback: z.string().optional(),
+          rating: z.number().min(1).max(5).optional(),
+          result: z.enum(["pending", "passed", "failed", "on_hold"]).default("pending"),
+          notes: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { createInterview } = await import("./db");
+        const interviewId = await createInterview(input);
+        return { success: true, interviewId };
+      }),
+
+    /**
+     * 更新面试记录
+     */
+    update: publicProcedure
+      .input(
+        z.object({
+          id: z.number(),
+          interviewDate: z.date().optional(),
+          interviewer: z.string().optional(),
+          interviewType: z.enum(["phone", "video", "onsite", "technical", "hr"]).optional(),
+          feedback: z.string().optional(),
+          rating: z.number().min(1).max(5).optional(),
+          result: z.enum(["pending", "passed", "failed", "on_hold"]).optional(),
+          notes: z.string().optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { updateInterview } = await import("./db");
+        const { id, ...data } = input;
+        await updateInterview(id, data);
+        return { success: true };
+      }),
+
+    /**
+     * 删除面试记录
+     */
+    delete: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input }) => {
+        const { deleteInterview } = await import("./db");
+        await deleteInterview(input.id);
+        return { success: true };
+      }),
+  }),
 });
 
 export type AppRouter = typeof appRouter;

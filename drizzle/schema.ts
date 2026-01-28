@@ -136,3 +136,23 @@ export const aiEvaluations = mysqlTable("ai_evaluations", {
 
 export type AiEvaluation = typeof aiEvaluations.$inferSelect;
 export type InsertAiEvaluation = typeof aiEvaluations.$inferInsert;
+
+/**
+ * 面试记录表
+ */
+export const interviews = mysqlTable("interviews", {
+  id: int("id").autoincrement().primaryKey(),
+  candidateId: int("candidateId").notNull(), // 候选人ID
+  interviewDate: timestamp("interviewDate").notNull(), // 面试时间
+  interviewer: varchar("interviewer", { length: 100 }), // 面试官
+  interviewType: mysqlEnum("interviewType", ["phone", "video", "onsite", "technical", "hr"]).default("onsite"), // 面试类型
+  feedback: text("feedback"), // 面试反馈
+  rating: int("rating"), // 面试评分 1-5
+  result: mysqlEnum("result", ["pending", "passed", "failed", "on_hold"]).default("pending"), // 面试结果
+  notes: text("notes"), // 备注
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Interview = typeof interviews.$inferSelect;
+export type InsertInterview = typeof interviews.$inferInsert;

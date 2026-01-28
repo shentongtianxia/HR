@@ -1,6 +1,6 @@
 import { eq, like, or, and, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, candidates, workExperiences, educations, projects, skills, aiEvaluations } from "../drizzle/schema";
+import { InsertUser, users, candidates, workExperiences, educations, projects, skills, aiEvaluations, interviews, InsertInterview } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -324,6 +324,79 @@ export async function importCandidate(data: {
     return candidateId;
   } catch (error) {
     console.error("[Database] Failed to import candidate:", error);
+    throw error;
+  }
+}
+
+// 面试记录相关函数
+
+/**
+ * 获取候选人的所有面试记录
+ */
+export async function getInterviewsByCandidateId(candidateId: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  try {
+    return await db.select().from(interviews).where(eq(interviews.candidateId, candidateId));
+  } catch (error) {
+    console.error("[Database] Failed to get interviews:", error);
+    throw error;
+  }
+}
+
+/**
+ * 创建面试记录
+ */
+export async function createInterview(data: InsertInterview) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  try {
+    const [result] = await db.insert(interviews).values(data);
+    return result.insertId;
+  } catch (error) {
+    console.error("[Database] Failed to create interview:", error);
+    throw error;
+  }
+}
+
+/**
+ * 更新面试记录
+ */
+export async function updateInterview(id: number, data: Partial<InsertInterview>) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  try {
+    await db.update(interviews).set(data).where(eq(interviews.id, id));
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to update interview:", error);
+    throw error;
+  }
+}
+
+/**
+ * 删除面试记录
+ */
+export async function deleteInterview(id: number) {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  try {
+    await db.delete(interviews).where(eq(interviews.id, id));
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to delete interview:", error);
     throw error;
   }
 }
