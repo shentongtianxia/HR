@@ -1,27 +1,52 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { candidates } from "../lib/data";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { MapPin, Briefcase, GraduationCap, Wallet, Star, AlertTriangle, Lightbulb } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Briefcase, GraduationCap, MapPin, DollarSign, Star, AlertTriangle, Lightbulb, CheckCircle2, Search } from "lucide-react";
 
 export default function SimpleView() {
   const [selectedId, setSelectedId] = useState(candidates[0]?.id);
-  const selectedCandidate = candidates.find((c) => c.id === selectedId);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const filteredCandidates = useMemo(() => {
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return candidates;
+    return candidates.filter((c) => 
+      c.name.toLowerCase().includes(query) ||
+      c.title.toLowerCase().includes(query) ||
+      c.tags.some(tag => tag.toLowerCase().includes(query)) ||
+      c.location.toLowerCase().includes(query)
+    );
+  }, [searchQuery]);
+
+  const selectedCandidate = candidates.find((c) => c.id === selectedId) || filteredCandidates[0];
 
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">
       {/* Left Column: Candidate List (20%) */}
       <div className="w-1/5 border-r bg-muted/10 flex flex-col">
-        <div className="p-4 border-b bg-background">
-          <h2 className="font-semibold text-lg">候选人列表</h2>
-          <p className="text-xs text-muted-foreground">共 {candidates.length} 位候选人</p>
+        <div className="p-4 border-b bg-background space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-lg">候选人列表</h2>
+            <p className="text-xs text-muted-foreground">共 {filteredCandidates.length} 位</p>
+          </div>
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="搜索姓名、职位、标签..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8"
+            />
+          </div>
         </div>
-        <ScrollArea className="h-[calc(100vh-65px)]">
+        <ScrollArea className="h-[calc(100vh-120px)]">
           <div className="flex flex-col">
-            {candidates.map((candidate) => (
+            {filteredCandidates.map((candidate) => (
               <button
                 key={candidate.id}
                 onClick={() => setSelectedId(candidate.id)}

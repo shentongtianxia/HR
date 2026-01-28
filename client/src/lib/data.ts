@@ -1,10 +1,13 @@
 import { Candidate } from "../types";
 
-export const candidates: Candidate[] = [
+// 统一的默认头像（中性灰色人像）
+const DEFAULT_AVATAR = "https://ui-avatars.com/api/?background=e2e8f0&color=64748b&name=";
+
+const rawCandidates: Candidate[] = [
   {
     id: "dou-1",
     name: "窦先生",
-    avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=faces",
+    avatar: "", // 将在下方统一处理
     title: "销售经理",
     experience: "15年经验",
     education: "本科",
@@ -60,7 +63,7 @@ export const candidates: Candidate[] = [
   {
     id: "zhao-1",
     name: "赵先生",
-    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=faces",
+    avatar: "",
     title: "销售经理",
     experience: "6年经验",
     education: "大专",
@@ -105,7 +108,7 @@ export const candidates: Candidate[] = [
   {
     id: "zhong-1",
     name: "钟先生",
-    avatar: "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&h=150&fit=crop&crop=faces",
+    avatar: "",
     title: "销售经理",
     experience: "7年经验",
     education: "本科",
@@ -150,7 +153,7 @@ export const candidates: Candidate[] = [
   {
     id: "dong-1",
     name: "董先生",
-    avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=faces",
+    avatar: "",
     title: "销售经理",
     experience: "10年经验",
     education: "本科",
@@ -189,7 +192,7 @@ export const candidates: Candidate[] = [
   {
     id: "chen-1",
     name: "陈先生",
-    avatar: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=150&h=150&fit=crop&crop=faces",
+    avatar: "",
     title: "销售主管",
     experience: "12年经验",
     education: "大专",
@@ -240,7 +243,7 @@ export const candidates: Candidate[] = [
   {
     id: "wu-1",
     name: "吴女士",
-    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=faces",
+    avatar: "",
     title: "外贸销售",
     experience: "8年经验",
     education: "本科",
@@ -279,7 +282,7 @@ export const candidates: Candidate[] = [
   {
     id: "he-1",
     name: "贺女士",
-    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop&crop=faces",
+    avatar: "",
     title: "外贸业务经理",
     experience: "18年经验",
     education: "本科",
@@ -324,7 +327,7 @@ export const candidates: Candidate[] = [
   {
     id: "s-1",
     name: "S女士",
-    avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&crop=faces",
+    avatar: "",
     title: "外贸专员",
     experience: "9年经验",
     education: "本科",
@@ -363,7 +366,7 @@ export const candidates: Candidate[] = [
   {
     id: "wei-1",
     name: "魏先生",
-    avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=faces",
+    avatar: "",
     title: "外贸专员",
     experience: "10年经验",
     education: "本科",
@@ -402,7 +405,7 @@ export const candidates: Candidate[] = [
   {
     id: "j-1",
     name: "J女士",
-    avatar: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=150&h=150&fit=crop&crop=faces",
+    avatar: "",
     title: "外贸经理",
     experience: "8年经验",
     education: "本科",
@@ -439,3 +442,15 @@ export const candidates: Candidate[] = [
     }
   }
 ];
+
+// 数据去重逻辑：使用Map以ID为键进行去重
+const uniqueCandidatesMap = new Map<string, Candidate>();
+rawCandidates.forEach(candidate => {
+  if (!uniqueCandidatesMap.has(candidate.id)) {
+    // 统一设置头像
+    candidate.avatar = `${DEFAULT_AVATAR}${encodeURIComponent(candidate.name)}`;
+    uniqueCandidatesMap.set(candidate.id, candidate);
+  }
+});
+
+export const candidates: Candidate[] = Array.from(uniqueCandidatesMap.values());
