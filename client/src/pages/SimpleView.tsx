@@ -113,7 +113,7 @@ export default function SimpleView() {
                         {selectedCandidate.education}
                       </div>
                       <div className="flex items-center gap-1">
-                        <Wallet className="h-4 w-4" />
+                        <DollarSign className="h-4 w-4" />
                         {selectedCandidate.salary}
                       </div>
                     </div>
