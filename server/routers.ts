@@ -3,8 +3,10 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
-import { getCandidates, getCandidateDetail, getCandidateSkills, getAiEvaluation, upsertAiEvaluation, importCandidate } from "./db";
+import { getCandidates, getCandidateDetail, getCandidateSkills, getAiEvaluation, upsertAiEvaluation, importCandidate, getDb } from "./db";
 import { invokeLLM } from "./_core/llm";
+import { candidates } from "../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 export const appRouter = router({
   system: systemRouter,
@@ -309,6 +311,59 @@ ${skills.map(s => `${s.name}(${s.level})`).join('、')}
           successCount,
           failureCount,
           results,
+        };
+      }),
+
+    /**
+     * 更新候选人状态
+     */
+    updateStatus: publicProcedure
+      .input(
+        z.object({
+          candidateId: z.number(),
+          status: z.enum(["pending", "reviewing", "interviewed", "offered", "rejected"]),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) {
+          throw new Error("数据库连接失败");
+        }
+
+        await db
+          .update(candidates)
+          .set({ status: input.status })
+          .where(eq(candidates.id, input.candidateId));
+
+        return { success: true };
+      }),
+
+    /**
+     * 批量更新候选人状态
+     */
+    batchUpdateStatus: publicProcedure
+      .input(
+        z.object({
+          candidateIds: z.array(z.number()),
+          status: z.enum(["pending", "reviewing", "interviewed", "offered", "rejected"]),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) {
+          throw new Error("数据库连接失败");
+        }
+
+        for (const candidateId of input.candidateIds) {
+          await db
+            .update(candidates)
+            .set({ status: input.status })
+            .where(eq(candidates.id, candidateId));
+        }
+
+        return { 
+          success: true,
+          updatedCount: input.candidateIds.length,
         };
       }),
   }),

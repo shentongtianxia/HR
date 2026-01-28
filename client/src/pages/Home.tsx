@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { BatchImportDialog } from "@/components/BatchImportDialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Home() {
   const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
@@ -69,6 +70,18 @@ export default function Home() {
     },
   });
 
+  // 更新候选人状态
+  const updateStatus = trpc.candidates.updateStatus.useMutation({
+    onSuccess: () => {
+      toast.success("状态更新成功！");
+      utils.candidates.list.invalidate();
+      utils.candidates.detail.invalidate();
+    },
+    onError: (error) => {
+      toast.error("状态更新失败：" + error.message);
+    },
+  });
+
   // 筛选候选人
   const filteredCandidates = useMemo(() => {
     if (!candidates) return [];
@@ -101,6 +114,30 @@ export default function Home() {
     if (numScore >= 80) return "bg-blue-100 text-blue-800 border-blue-200";
     if (numScore >= 70) return "bg-yellow-100 text-yellow-800 border-yellow-200";
     return "bg-gray-100 text-gray-800 border-gray-200";
+  };
+
+  // 获取状态文本
+  const getStatusText = (status: string) => {
+    const statusMap: Record<string, string> = {
+      pending: "待审核",
+      reviewing: "审核中",
+      interviewed: "已面试",
+      offered: "已录用",
+      rejected: "已拒绝",
+    };
+    return statusMap[status] || status;
+  };
+
+  // 获取状态颜色
+  const getStatusColor = (status: string) => {
+    const colorMap: Record<string, string> = {
+      pending: "text-gray-600 border-gray-300",
+      reviewing: "text-blue-600 border-blue-300",
+      interviewed: "text-purple-600 border-purple-300",
+      offered: "text-green-600 border-green-300",
+      rejected: "text-red-600 border-red-300",
+    };
+    return colorMap[status] || "text-gray-600 border-gray-300";
   };
 
   return (
@@ -281,13 +318,21 @@ export default function Home() {
                           <h3 className="font-semibold text-foreground truncate">
                             {candidate.name}
                           </h3>
-                          <Badge
-                            className={`ml-2 text-xs font-bold ${getScoreColor(
-                              candidate.matchScore || '0'
-                            )}`}
-                          >
-                            {candidate.matchScore || '0'}分
-                          </Badge>
+                          <div className="flex items-center gap-1">
+                            <Badge
+                              variant="outline"
+                              className={`text-xs ${getStatusColor(candidate.status)}`}
+                            >
+                              {getStatusText(candidate.status)}
+                            </Badge>
+                            <Badge
+                              className={`ml-1 text-xs font-bold ${getScoreColor(
+                                candidate.matchScore || '0'
+                              )}`}
+                            >
+                              {candidate.matchScore || '0'}分
+                            </Badge>
+                          </div>
                         </div>
                         <p className="text-sm text-muted-foreground mb-2 truncate">
                           {candidate.position} · {candidate.yearsOfExperience}年经验
@@ -335,9 +380,31 @@ export default function Home() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex-1">
-                      <h2 className="text-3xl font-bold text-foreground mb-2">
-                        {candidateDetail.candidate.name}
-                      </h2>
+                      <div className="flex items-center justify-between mb-2">
+                        <h2 className="text-3xl font-bold text-foreground">
+                          {candidateDetail.candidate.name}
+                        </h2>
+                        <Select
+                          value={candidateDetail.candidate.status}
+                          onValueChange={(value) => {
+                            updateStatus.mutate({
+                              candidateId: candidateDetail.candidate.id,
+                              status: value as "pending" | "reviewing" | "interviewed" | "offered" | "rejected",
+                            });
+                          }}
+                        >
+                          <SelectTrigger className="w-[140px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="pending">待审核</SelectItem>
+                            <SelectItem value="reviewing">审核中</SelectItem>
+                            <SelectItem value="interviewed">已面试</SelectItem>
+                            <SelectItem value="offered">已录用</SelectItem>
+                            <SelectItem value="rejected">已拒绝</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
                       <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-4">
                         <div className="flex items-center gap-1">
                           <Briefcase className="h-4 w-4" />
