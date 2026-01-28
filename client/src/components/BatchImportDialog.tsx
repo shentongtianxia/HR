@@ -5,12 +5,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Upload, FileText, Loader2 } from "lucide-react";
+import { Upload, FileText, Loader2, FileUp } from "lucide-react";
 import { toast } from "sonner";
 
 export function BatchImportDialog() {
   const [open, setOpen] = useState(false);
   const [batchImportFile, setBatchImportFile] = useState<File | null>(null);
+  const [resumeFiles, setResumeFiles] = useState<File[]>([]);
+  const [parsingResumes, setParsingResumes] = useState(false);
   const [batchImportProgress, setBatchImportProgress] = useState(0);
   const [batchImportResult, setBatchImportResult] = useState<{
     total: number;
@@ -20,6 +22,9 @@ export function BatchImportDialog() {
   } | null>(null);
 
   const utils = trpc.useUtils();
+
+  // 解析简历文件
+  const parseResume = trpc.candidates.parseResume.useMutation();
 
   // 批量导入候选人
   const batchImport = trpc.candidates.batchImport.useMutation({
@@ -100,6 +105,100 @@ export function BatchImportDialog() {
     }
   };
 
+  // 处理简历文件上传
+  const handleResumeFilesUpload = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    
+    const validFiles = Array.from(files).filter(file => {
+      const ext = file.name.toLowerCase().split('.').pop();
+      return ext === 'pdf' || ext === 'doc' || ext === 'docx';
+    });
+    
+    if (validFiles.length === 0) {
+      toast.error('请上传PDF或Word格式的简历文件');
+      return;
+    }
+    
+    setResumeFiles(validFiles);
+  };
+
+  // 解析并导入简历文件
+  const handleParseAndImportResumes = async () => {
+    if (resumeFiles.length === 0) {
+      toast.error('请先上传简历文件');
+      return;
+    }
+
+    setParsingResumes(true);
+    setBatchImportProgress(0);
+    setBatchImportResult(null);
+
+    try {
+      const candidates = [];
+      const progressStep = 80 / resumeFiles.length;
+
+      for (let i = 0; i < resumeFiles.length; i++) {
+        const file = resumeFiles[i];
+        toast.info(`正在解析第 ${i + 1}/${resumeFiles.length} 份简历...`);
+
+        try {
+          // 读取文件为Base64
+          const fileData = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              const base64 = (reader.result as string).split(',')[1];
+              resolve(base64);
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+
+          // 调用后端API解析简历
+          const resumeInfo = await parseResume.mutateAsync({
+            fileData,
+            filename: file.name,
+          });
+
+          // 转换为导入格式
+          candidates.push({
+            name: resumeInfo.name,
+            position: resumeInfo.position || '未知',
+            email: resumeInfo.email,
+            phone: resumeInfo.phone,
+            location: resumeInfo.location,
+            yearsOfExperience: resumeInfo.yearsOfExperience,
+            expectedSalary: resumeInfo.expectedSalary,
+            summary: resumeInfo.summary,
+            workExperiences: resumeInfo.workExperiences,
+            educations: resumeInfo.educations,
+            skills: resumeInfo.skills,
+          });
+
+          setBatchImportProgress((i + 1) * progressStep);
+        } catch (error) {
+          console.error(`解析简历 ${file.name} 失败:`, error);
+          toast.error(`解析简历 ${file.name} 失败`);
+        }
+      }
+
+      if (candidates.length === 0) {
+        throw new Error('没有成功解析任何简历');
+      }
+
+      // 批量导入解析后的候选人
+      toast.info('正在导入候选人...');
+      await batchImport.mutateAsync({ candidates });
+      
+      // 清空文件列表
+      setResumeFiles([]);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '简历解析失败');
+      setBatchImportProgress(0);
+    } finally {
+      setParsingResumes(false);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -112,22 +211,73 @@ export function BatchImportDialog() {
         <DialogHeader>
           <DialogTitle>批量导入候选人</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="border-2 border-dashed border-border rounded-lg p-8 text-center">
-            <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">
-                支持JSON或CSV格式文件，单次最多导入100人
-              </p>
-              <Input
-                type="file"
-                accept=".json,.csv"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) handleFileUpload(file);
-                }}
-                className="max-w-xs mx-auto"
-              />
+        <div className="space-y-6 py-4">
+          {/* JSON/CSV文件导入 */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium">方式一：JSON/CSV文件导入</h3>
+            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+              <Upload className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  支持JSON或CSV格式文件，单次最多导入100人
+                </p>
+                <Input
+                  type="file"
+                  accept=".json,.csv"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleFileUpload(file);
+                  }}
+                  className="max-w-xs mx-auto"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* PDF/Word简历导入 */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium">方式二：简历文件导入（PDF/Word）</h3>
+            <div className="border-2 border-dashed border-border rounded-lg p-6 text-center">
+              <FileUp className="mx-auto h-10 w-10 text-muted-foreground mb-3" />
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  上传PDF或Word简历，AI自动提取关键信息
+                </p>
+                <Input
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  multiple
+                  onChange={(e) => handleResumeFilesUpload(e.target.files)}
+                  className="max-w-xs mx-auto"
+                />
+                {resumeFiles.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-sm font-medium">已选择 {resumeFiles.length} 份简历：</p>
+                    <div className="max-h-32 overflow-y-auto space-y-1">
+                      {resumeFiles.map((file, index) => (
+                        <div key={index} className="text-xs text-muted-foreground flex items-center justify-center gap-2">
+                          <FileText className="h-3 w-3" />
+                          {file.name}
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      onClick={handleParseAndImportResumes}
+                      disabled={parsingResumes}
+                      className="mt-2"
+                    >
+                      {parsingResumes ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          解析中...
+                        </>
+                      ) : (
+                        `开始解析并导入 ${resumeFiles.length} 份简历`
+                      )}
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

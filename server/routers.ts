@@ -366,6 +366,28 @@ ${skills.map(s => `${s.name}(${s.level})`).join('、')}
           updatedCount: input.candidateIds.length,
         };
       }),
+
+    /**
+     * 解析简历文件（PDF/Word）
+     */
+    parseResume: publicProcedure
+      .input(
+        z.object({
+          fileData: z.string(), // Base64 encoded file data
+          filename: z.string(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const { parseResumeFile } = await import("./resumeParser");
+        
+        // Decode base64 file data
+        const buffer = Buffer.from(input.fileData, "base64");
+        
+        // Parse resume and extract information
+        const resumeInfo = await parseResumeFile(buffer, input.filename);
+        
+        return resumeInfo;
+      }),
   }),
 
   /**
