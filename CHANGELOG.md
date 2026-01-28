@@ -117,7 +117,10 @@ recruitment_system/
 - **提交者**：Manus AI Agent
 - **版本号**：1.0.0
 - **检查点ID**：9274a24a
+- **GitHub Commit**：a5ee26d
 - **提交说明**：完成招聘管理系统核心功能开发，包括三栏布局、候选人管理、AI智能评价等功能
+- **GitHub仓库**：https://github.com/shentongtianxia/HR.git
+- **提交状态**：✅ 已成功推送到GitHub
 - **变更文件**：
   - 新增：drizzle/schema.ts（数据库表结构）
   - 新增：server/db.ts（数据库查询函数）
@@ -128,3 +131,11 @@ recruitment_system/
   - 新增：server/candidates.detail.test.ts（单元测试）
   - 新增：todo.md（项目待办清单）
   - 新增：CHANGELOG.md（本文件）
+
+### Git提交历史
+```
+df1e298 - merge: 合并远程仓库并保留当前版本
+a5ee26d - feat: 完成招聘管理系统核心功能开发 v1.0.0
+9274a24 - Checkpoint: 完成招聘管理系统核心功能开发
+cd71ea0 - Initial project bootstrap
+```
