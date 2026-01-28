@@ -1,4 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
+import mammoth from "mammoth";
+import * as pdfjsLib from "pdfjs-dist";
 import { candidates } from "../lib/data";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -6,7 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Briefcase, GraduationCap, MapPin, DollarSign, Star, AlertTriangle, Lightbulb, CheckCircle2, Search } from "lucide-react";
+import { Briefcase, GraduationCap, MapPin, DollarSign, Star, AlertTriangle, Lightbulb, CheckCircle2, Search, Download, Upload, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export default function SimpleView() {
   const [selectedId, setSelectedId] = useState(candidates[0]?.id);
@@ -24,6 +30,86 @@ export default function SimpleView() {
   }, [searchQuery]);
 
   const selectedCandidate = candidates.find((c) => c.id === selectedId) || filteredCandidates[0];
+  const resumeRef = useRef<HTMLDivElement>(null);
+
+  // Helper to get avatar based on gender/name
+  const getAvatar = (candidate: typeof candidates[0]) => {
+    const isFemale = candidate.name.includes("女士") || candidate.name.includes("小姐") || candidate.name.includes("女");
+    return isFemale ? "/images/avatar_female.png" : "/images/avatar_male.png";
+  };
+
+  // Export PDF function
+  const handleExportPDF = async () => {
+    if (!resumeRef.current || !selectedCandidate) return;
+    
+    try {
+      const canvas = await html2canvas(resumeRef.current, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: "#ffffff"
+      });
+      
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4"
+      });
+      
+      const imgWidth = 210;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
+      pdf.save(`${selectedCandidate.name}_简历报告.pdf`);
+      toast.success("PDF导出成功");
+    } catch (error) {
+      console.error("Export failed:", error);
+      toast.error("导出失败，请重试");
+    }
+  };
+
+  // File Import Handler
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      let text = "";
+      if (file.name.endsWith(".docx")) {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        text = result.value;
+      } else if (file.name.endsWith(".txt") || file.name.endsWith(".md")) {
+        text = await file.text();
+      } else if (file.name.endsWith(".pdf")) {
+        // Basic PDF text extraction
+        const arrayBuffer = await file.arrayBuffer();
+        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        let fullText = "";
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          fullText += content.items.map((item: any) => item.str).join(" ") + "\n";
+        }
+        text = fullText;
+      } else {
+        toast.error("不支持的文件格式");
+        return;
+      }
+
+      if (text) {
+        toast.success(`成功解析文件: ${file.name}`);
+        // In a real app, we would parse this text into the candidate structure
+        // For now, we'll just show a toast with the first few chars
+        console.log("Parsed text:", text.substring(0, 200));
+        toast.info("文件解析成功（演示模式：仅提取文本，未入库）");
+      }
+    } catch (error) {
+      console.error("Import failed:", error);
+      toast.error("文件解析失败");
+    }
+  };
 
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">
@@ -31,8 +117,22 @@ export default function SimpleView() {
       <div className="w-1/5 border-r bg-muted/10 flex flex-col">
         <div className="p-4 border-b bg-background space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-lg">候选人列表</h2>
-            <p className="text-xs text-muted-foreground">共 {filteredCandidates.length} 位</p>
+            <h2 className="font-semibold text-lg tracking-tight">候选人</h2>
+            <div className="flex gap-2">
+              <div className="relative">
+                <input
+                  type="file"
+                  id="file-upload"
+                  className="hidden"
+                  accept=".docx,.pdf,.md,.txt"
+                  onChange={handleFileUpload}
+                />
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => document.getElementById("file-upload")?.click()}>
+                  <Upload className="h-4 w-4" />
+                </Button>
+              </div>
+              <span className="text-xs text-muted-foreground self-center">共 {filteredCandidates.length} 位</span>
+            </div>
           </div>
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -55,7 +155,7 @@ export default function SimpleView() {
                 }`}
               >
                 <Avatar className="h-10 w-10 mt-1">
-                  <AvatarImage src={candidate.avatar} alt={candidate.name} />
+                  <AvatarImage src={getAvatar(candidate)} alt={candidate.name} className="object-cover" />
                   <AvatarFallback>{candidate.name[0]}</AvatarFallback>
                 </Avatar>
                 <div className="flex-1 overflow-hidden">
@@ -89,12 +189,12 @@ export default function SimpleView() {
       <div className="w-1/2 border-r bg-background flex flex-col">
         {selectedCandidate ? (
           <ScrollArea className="h-full">
-            <div className="p-8 max-w-3xl mx-auto">
+            <div className="p-8 max-w-3xl mx-auto" ref={resumeRef}>
               {/* Header */}
               <div className="flex items-start justify-between mb-8">
                 <div className="flex gap-6">
-                  <Avatar className="h-24 w-24 border-4 border-background shadow-sm">
-                    <AvatarImage src={selectedCandidate.avatar} alt={selectedCandidate.name} />
+                  <Avatar className="h-24 w-24 border-4 border-background shadow-sm bg-secondary/20">
+                    <AvatarImage src={getAvatar(selectedCandidate)} alt={selectedCandidate.name} className="object-cover" />
                     <AvatarFallback className="text-2xl">{selectedCandidate.name[0]}</AvatarFallback>
                   </Avatar>
                   <div>
@@ -126,6 +226,10 @@ export default function SimpleView() {
                     </div>
                   </div>
                 </div>
+                <Button variant="outline" size="sm" className="gap-2" onClick={handleExportPDF}>
+                  <Download className="h-4 w-4" />
+                  导出PDF
+                </Button>
               </div>
 
               <Separator className="my-6" />
