@@ -236,5 +236,206 @@ export const candidates: Candidate[] = [
       cons: ["大专学历", "近期工作变动较频繁"],
       suggestion: "建议面试。适合需要快速出业绩、能吃苦的销售岗位。"
     }
+  },
+  {
+    id: "wu-1",
+    name: "吴女士",
+    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=faces",
+    title: "外贸销售",
+    experience: "8年经验",
+    education: "本科",
+    location: "广州",
+    salary: "1-1.5万/月",
+    status: "active",
+    matchScore: 94,
+    tags: ["阿里巴巴国际站", "中国制造网", "客户开发", "英语六级"],
+    summary: "8年外贸经验，精通B2B平台运营与客户开发。在广州鑫衍运动用品任职6年，稳定性极高。英语六级，沟通无障碍。",
+    details: {
+      workHistory: [
+        {
+          company: "广州鑫衍运动用品有限公司",
+          role: "外贸销售",
+          period: "2019.05-至今",
+          description: "负责阿里巴巴国际站及中国制造网平台运营；独立开发海外客户，跟进询盘至成交；维护老客户关系，提升复购率。"
+        }
+      ],
+      education: [
+        {
+          school: "广东外语外贸大学",
+          degree: "本科 | 商务英语",
+          period: "2016.09-2020.06"
+        }
+      ],
+      skills: ["B2B平台运营", "商务英语谈判", "客户关系管理", "外贸全流程"]
+    },
+    aiEvaluation: {
+      score: 94,
+      summary: "资深外贸销售，平台运营经验丰富，稳定性极佳，适合需要长期深耕的外贸团队。",
+      pros: ["8年经验且单份工作长达6年，稳定性极高", "精通主流B2B平台（阿里、中国制造网）", "广外商务英语专业，语言能力强"],
+      cons: ["工作经历相对单一，可能对其他行业适应需时间"],
+      suggestion: "强烈推荐面试。重点考察其在平台运营方面的具体数据表现（如询盘转化率）。"
+    }
+  },
+  {
+    id: "he-1",
+    name: "贺女士",
+    avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop&crop=faces",
+    title: "外贸业务经理",
+    experience: "18年经验",
+    education: "本科",
+    location: "青岛",
+    salary: "1.2-2.4万/月",
+    status: "active",
+    matchScore: 91,
+    tags: ["纺织服装", "询盘报价", "跟单管理", "行业资深"],
+    summary: "18年纺织服装行业外贸经验，从跟单助理成长为业务经理。精通从询盘报价到出货回款的全流程管理。",
+    details: {
+      workHistory: [
+        {
+          company: "青岛爱尔发纺织有限公司",
+          role: "外贸销售",
+          period: "2023.12-至今",
+          description: "负责纺织品外贸销售，开发新客户，维护老客户。"
+        },
+        {
+          company: "青岛兆明针织有限公司",
+          role: "外贸业务经理",
+          period: "2023.07-2023.12",
+          description: "管理外贸团队，制定销售目标，审核报价与合同。"
+        }
+      ],
+      education: [
+        {
+          school: "青岛科技大学",
+          degree: "本科 | 工商管理",
+          period: "2003.09-2007.09"
+        }
+      ],
+      skills: ["纺织行业知识", "全流程管理", "报价策略", "团队协作"]
+    },
+    aiEvaluation: {
+      score: 91,
+      summary: "行业老兵，深耕纺织服装领域18年，经验无可替代，适合需要带新人的管理岗位或高级销售岗。",
+      pros: ["18年行业经验，极其资深", "熟悉外贸全流程，无需培训", "具备管理经验"],
+      cons: ["近期工作变动稍频繁（2023年至今两份）", "年龄41岁，需确认其精力与冲劲"],
+      suggestion: "建议面试。重点考察其近期离职原因及对新工作的期望稳定性。"
+    }
+  },
+  {
+    id: "s-1",
+    name: "S女士",
+    avatar: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150&h=150&fit=crop&crop=faces",
+    title: "外贸专员",
+    experience: "9年经验",
+    education: "本科",
+    location: "珠海",
+    salary: "1-1.3万/月",
+    status: "active",
+    matchScore: 89,
+    tags: ["日语", "海外客户开发", "合同制定", "双语优势"],
+    summary: "9年外贸经验，具备英语与日语双语优势。在珠海华粤传动科技任职8年，稳定性极高。擅长开发海外客户与合同制定。",
+    details: {
+      workHistory: [
+        {
+          company: "珠海华粤传动科技有限公司",
+          role: "外贸专员",
+          period: "2017.10-至今",
+          description: "负责海外市场拓展，利用双语优势开发客户；制定并审核外贸合同，规避风险。"
+        }
+      ],
+      education: [
+        {
+          school: "广东海洋大学寸金学院",
+          degree: "本科 | 英语",
+          period: "2013.09-2017.06"
+        }
+      ],
+      skills: ["日语商务沟通", "英语商务沟通", "合同风险管理", "客户开发"]
+    },
+    aiEvaluation: {
+      score: 89,
+      summary: "双语复合型人才，稳定性极高，适合需要拓展日本市场或多语言环境的企业。",
+      pros: ["9年经验且单份工作8年，忠诚度高", "具备日语+英语双语能力，稀缺性强"],
+      cons: ["职位一直为专员/助理，需确认是否有晋升意愿"],
+      suggestion: "推荐面试。考察其语言实际应用能力及职业规划。"
+    }
+  },
+  {
+    id: "wei-1",
+    name: "魏先生",
+    avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=faces",
+    title: "外贸专员",
+    experience: "10年经验",
+    education: "本科",
+    location: "深圳",
+    salary: "1-1.5万/月",
+    status: "active",
+    matchScore: 87,
+    tags: ["平台操作", "客户开发", "电路板行业", "长期稳定"],
+    summary: "10年外贸经验，深耕电路板行业。在深圳汇和精密电路任职9年，稳定性极高。精通外贸平台操作与客户开发。",
+    details: {
+      workHistory: [
+        {
+          company: "深圳汇和精密电路有限公司",
+          role: "外贸专员",
+          period: "2016.06-至今",
+          description: "负责公司外贸部日常运营；操作B2B平台，发布产品；开发并维护海外客户。"
+        }
+      ],
+      education: [
+        {
+          school: "湖北汽车工业学院",
+          degree: "本科 | 国际经济与贸易",
+          period: "2012.09-2016.06"
+        }
+      ],
+      skills: ["电子行业外贸", "平台运营", "客户维护", "订单处理"]
+    },
+    aiEvaluation: {
+      score: 87,
+      summary: "极具稳定性的电子行业外贸人才，适合需要长期沉淀的岗位。",
+      pros: ["10年经验，单份工作9年，稳定性极佳", "深耕电路板行业，专业度高"],
+      cons: ["一直在同一家公司，可能思维模式较固化"],
+      suggestion: "建议面试。考察其对新环境的适应能力及创新思维。"
+    }
+  },
+  {
+    id: "j-1",
+    name: "J女士",
+    avatar: "https://images.unsplash.com/photo-1573497019940-1c28c88b4f3e?w=150&h=150&fit=crop&crop=faces",
+    title: "外贸经理",
+    experience: "8年经验",
+    education: "本科",
+    location: "上海",
+    salary: "1.8-2.5万/月",
+    status: "active",
+    matchScore: 93,
+    tags: ["电线电缆", "211院校", "外贸开发", "业务管理"],
+    summary: "8年外贸经验，毕业于东华大学（211）。在上海浦东电线电缆集团任职7年，从专员成长为经理。具备优秀的业务开发与管理能力。",
+    details: {
+      workHistory: [
+        {
+          company: "上海浦东电线电缆（集团）有限公司",
+          role: "外贸专员/经理",
+          period: "2018.10-至今",
+          description: "负责外贸业务全面管理；制定出口策略；带领团队完成销售指标；维护核心大客户。"
+        }
+      ],
+      education: [
+        {
+          school: "东华大学",
+          degree: "本科 | 国际经济与贸易",
+          period: "2014.09-2018.06"
+        }
+      ],
+      skills: ["团队管理", "大客户谈判", "行业洞察", "战略规划"]
+    },
+    aiEvaluation: {
+      score: 93,
+      summary: "高素质外贸管理人才，学历背景好，稳定性高，适合作为外贸团队核心骨干。",
+      pros: ["211院校科班出身，基础扎实", "7年大厂经验，稳定性高", "具备管理潜质"],
+      cons: ["薪资期望相对较高"],
+      suggestion: "强烈推荐面试。重点考察其管理理念和过往业绩的含金量。"
+    }
   }
 ];
