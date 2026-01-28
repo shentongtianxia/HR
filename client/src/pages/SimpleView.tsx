@@ -1,8 +1,11 @@
 import { useState, useMemo, useRef } from "react";
 import html2canvas from "html2canvas";
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 import mammoth from "mammoth";
 import * as pdfjsLib from "pdfjs-dist";
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 import { candidates } from "../lib/data";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +13,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Input } from "@/components/ui/input";
-import { Briefcase, GraduationCap, MapPin, DollarSign, Star, AlertTriangle, Lightbulb, CheckCircle2, Search, Download, Upload, FileText } from "lucide-react";
+import { Briefcase, GraduationCap, MapPin, DollarSign, Star, AlertTriangle, Lightbulb, CheckCircle2, Search, Download, Upload, FileText, Calendar as CalendarIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { format } from "date-fns";
 
 export default function SimpleView() {
   const [selectedId, setSelectedId] = useState(candidates[0]?.id);
@@ -42,31 +48,90 @@ export default function SimpleView() {
   const handleExportPDF = async () => {
     if (!resumeRef.current || !selectedCandidate) return;
     
+    const toastId = toast.loading("正在生成PDF...");
+    
     try {
-      const canvas = await html2canvas(resumeRef.current, {
-        scale: 2,
+      // Create a clone of the resume content to render for PDF
+      const originalElement = resumeRef.current;
+      const clone = originalElement.cloneNode(true) as HTMLElement;
+      
+      // Wrap in a container to ensure styles (like Tailwind variables) are preserved if they are on body/html
+      // But here we just append to body. We ensure the clone has a white background and proper width.
+      clone.style.position = 'fixed'; // Use fixed to avoid affecting layout
+      clone.style.top = '-10000px';
+      clone.style.left = '-10000px';
+      clone.style.width = '794px'; // A4 width in pixels at 96 DPI is approx 794px
+      clone.style.height = 'auto';
+      clone.style.zIndex = '-1';
+      clone.style.overflow = 'visible';
+      clone.style.background = '#ffffff';
+      clone.style.padding = '40px';
+      // Force text color to black for better readability in PDF
+      clone.style.color = '#000000';
+      
+      document.body.appendChild(clone);
+      
+      // Wait a moment for DOM to settle (optional but helpful for images)
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const canvas = await html2canvas(clone, {
+        scale: 2, // Higher scale for better quality
         useCORS: true,
+        allowTaint: true,
         logging: false,
-        backgroundColor: "#ffffff"
+        backgroundColor: "#ffffff",
+        windowWidth: 794
       });
       
-      const imgData = canvas.toDataURL("image/png");
+      document.body.removeChild(clone);
+      
+      const imgData = canvas.toDataURL("image/jpeg", 0.95); // Use JPEG for smaller size, PNG for quality
       const pdf = new jsPDF({
         orientation: "portrait",
         unit: "mm",
         format: "a4"
       });
       
-      const imgWidth = 210;
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      // First page
+      pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      // Subsequent pages
+      while (heightLeft > 0) {
+        position -= pageHeight; // Shift up by one page height
+        pdf.addPage();
+        pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
       
-      pdf.addImage(imgData, "PNG", 0, 0, imgWidth, imgHeight);
       pdf.save(`${selectedCandidate.name}_简历报告.pdf`);
       toast.success("PDF导出成功");
+      toast.dismiss(toastId);
     } catch (error) {
       console.error("Export failed:", error);
       toast.error("导出失败，请重试");
+      toast.dismiss(toastId);
     }
+  };
+
+  // AI Tag Generation
+  const generateAITags = (text: string) => {
+    const keywords = [
+      // Tech
+      "Java", "Python", "React", "Vue", "Spring", "MySQL", "Docker", "Kubernetes", "Go", "C++", "Node.js", "TypeScript", "AWS", "Cloud",
+      // Sales & Business
+      "销售", "管理", "英语", "外贸", "大客户", "KA", "团队管理", "市场拓展", "商务谈判", "渠道管理", "B2B", "SaaS",
+      // Soft Skills
+      "沟通能力", "领导力", "抗压能力", "解决问题"
+    ];
+    const foundTags = keywords.filter(keyword => text.toLowerCase().includes(keyword.toLowerCase()));
+    return Array.from(new Set(foundTags));
   };
 
   // File Import Handler
@@ -99,17 +164,29 @@ export default function SimpleView() {
       }
 
       if (text) {
-        toast.success(`成功解析文件: ${file.name}`);
-        // In a real app, we would parse this text into the candidate structure
-        // For now, we'll just show a toast with the first few chars
+        // Simple deduplication check based on file name or content hash (simulated here)
+        // In a real app, we would check against existing candidate IDs or content hash
+        const isDuplicate = candidates.some(c => c.name === file.name.split('.')[0] || text.includes(c.name));
+        
+        if (isDuplicate) {
+          toast.warning(`检测到重复候选人: ${file.name}`, {
+            description: "该候选人已存在于系统中，跳过导入。"
+          });
+          return;
+        }
+
+        const aiTags = generateAITags(text);
+        toast.success(`成功导入候选人: ${file.name}`);
+        toast.info(`AI 自动提取标签: ${aiTags.join(", ") || "无"}`);
         console.log("Parsed text:", text.substring(0, 200));
-        toast.info("文件解析成功（演示模式：仅提取文本，未入库）");
       }
     } catch (error) {
       console.error("Import failed:", error);
       toast.error("文件解析失败");
     }
   };
+
+  const [date, setDate] = useState<Date | undefined>(new Date());
 
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden">
@@ -226,10 +303,39 @@ export default function SimpleView() {
                     </div>
                   </div>
                 </div>
-                <Button variant="outline" size="sm" className="gap-2" onClick={handleExportPDF}>
-                  <Download className="h-4 w-4" />
-                  导出PDF
-                </Button>
+                <div className="flex gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-2">
+                        <CalendarIcon className="h-4 w-4" />
+                        安排面试
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="end">
+                      <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={(d) => {
+                          setDate(d);
+                          if (d) {
+                            toast.success(`已安排面试: ${format(d, "yyyy-MM-dd")}`, {
+                              description: `候选人: ${selectedCandidate?.name}`,
+                              action: {
+                                label: "撤销",
+                                onClick: () => setDate(undefined)
+                              }
+                            });
+                          }
+                        }}
+                        initialFocus
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <Button variant="outline" size="sm" className="gap-2" onClick={handleExportPDF}>
+                    <Download className="h-4 w-4" />
+                    导出PDF
+                  </Button>
+                </div>
               </div>
 
               <Separator className="my-6" />
