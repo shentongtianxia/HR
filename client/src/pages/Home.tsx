@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { BatchImportDialog } from "@/components/BatchImportDialog";
 
 export default function Home() {
   const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
@@ -115,6 +116,7 @@ export default function Home() {
             <Badge variant="outline" className="text-xs">
               共 {candidates?.length || 0} 位候选人
             </Badge>
+            <BatchImportDialog />
             <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
               <DialogTrigger asChild>
                 <Button size="sm" className="gap-2">

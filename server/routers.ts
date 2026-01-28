@@ -237,6 +237,80 @@ ${skills.map(s => `${s.name}(${s.level})`).join('、')}
         const candidateId = await importCandidate(input);
         return { success: true, candidateId };
       }),
+
+    /**
+     * 批量导入候选人信息
+     */
+    batchImport: publicProcedure
+      .input(
+        z.object({
+          candidates: z.array(
+            z.object({
+              name: z.string().min(1, "姓名不能为空"),
+              phone: z.string().optional(),
+              email: z.string().email("邮箱格式不正确").optional(),
+              position: z.string().min(1, "应聘职位不能为空"),
+              yearsOfExperience: z.number().min(0).optional(),
+              location: z.string().optional(),
+              expectedSalary: z.string().optional(),
+              summary: z.string().optional(),
+              workExperiences: z.array(
+                z.object({
+                  company: z.string().min(1, "公司名称不能为空"),
+                  position: z.string().min(1, "职位不能为空"),
+                  startDate: z.string().optional(),
+                  endDate: z.string().optional(),
+                  description: z.string().optional(),
+                  achievements: z.string().optional(),
+                })
+              ).optional(),
+              educations: z.array(
+                z.object({
+                  school: z.string().min(1, "学校名称不能为空"),
+                  degree: z.string().optional(),
+                  major: z.string().optional(),
+                  startDate: z.string().optional(),
+                  endDate: z.string().optional(),
+                })
+              ).optional(),
+              skills: z.array(
+                z.object({
+                  name: z.string().min(1, "技能名称不能为空"),
+                  level: z.enum(["beginner", "intermediate", "advanced", "expert"]).optional(),
+                })
+              ).optional(),
+            })
+          ),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const results = [];
+        let successCount = 0;
+        let failureCount = 0;
+
+        for (const candidate of input.candidates) {
+          try {
+            const candidateId = await importCandidate(candidate);
+            results.push({ success: true, candidateId, name: candidate.name });
+            successCount++;
+          } catch (error) {
+            results.push({ 
+              success: false, 
+              name: candidate.name, 
+              error: error instanceof Error ? error.message : "未知错误" 
+            });
+            failureCount++;
+          }
+        }
+
+        return {
+          success: true,
+          total: input.candidates.length,
+          successCount,
+          failureCount,
+          results,
+        };
+      }),
   }),
 });
 
