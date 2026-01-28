@@ -7,6 +7,7 @@ import * as pdfjsLib from "pdfjs-dist";
 // Configure PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 import { candidates } from "../lib/data";
+import { Candidate } from "../types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,23 +20,26 @@ import { toast } from "sonner";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { format } from "date-fns";
+import { zhCN } from "date-fns/locale";
 
 export default function SimpleView() {
+  // Initialize candidates state with data from data.ts
+  const [candidateList, setCandidateList] = useState(candidates);
   const [selectedId, setSelectedId] = useState(candidates[0]?.id);
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredCandidates = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
-    if (!query) return candidates;
-    return candidates.filter((c) => 
+    if (!query) return candidateList;
+    return candidateList.filter((c) => 
       c.name.toLowerCase().includes(query) ||
       c.title.toLowerCase().includes(query) ||
       c.tags.some(tag => tag.toLowerCase().includes(query)) ||
       c.location.toLowerCase().includes(query)
     );
-  }, [searchQuery]);
+  }, [searchQuery, candidateList]);
 
-  const selectedCandidate = candidates.find((c) => c.id === selectedId) || filteredCandidates[0];
+  const selectedCandidate = candidateList.find((c) => c.id === selectedId) || filteredCandidates[0];
   const resumeRef = useRef<HTMLDivElement>(null);
 
   // Helper to get avatar based on gender/name
@@ -76,11 +80,18 @@ export default function SimpleView() {
 
       const canvas = await html2canvas(clone, {
         scale: 2, // Higher scale for better quality
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
+        useCORS: true, // Enable CORS for images
+        allowTaint: false, // Disallow taint to prevent security errors
+        logging: true, // Enable logging for debugging
         backgroundColor: "#ffffff",
-        windowWidth: 794
+        windowWidth: 794,
+        onclone: (clonedDoc) => {
+          // Ensure all images in the clone have crossOrigin set
+          const images = clonedDoc.getElementsByTagName('img');
+          for (let i = 0; i < images.length; i++) {
+            images[i].crossOrigin = "Anonymous";
+          }
+        }
       });
       
       document.body.removeChild(clone);
@@ -166,7 +177,7 @@ export default function SimpleView() {
       if (text) {
         // Simple deduplication check based on file name or content hash (simulated here)
         // In a real app, we would check against existing candidate IDs or content hash
-        const isDuplicate = candidates.some(c => c.name === file.name.split('.')[0] || text.includes(c.name));
+        const isDuplicate = candidateList.some(c => c.name === file.name.split('.')[0] || text.includes(c.name));
         
         if (isDuplicate) {
           toast.warning(`检测到重复候选人: ${file.name}`, {
@@ -176,9 +187,52 @@ export default function SimpleView() {
         }
 
         const aiTags = generateAITags(text);
+        
+        // Create new candidate object
+        const newCandidate: Candidate = {
+          id: Date.now().toString(), // Simple ID generation
+          name: file.name.split('.')[0],
+          title: "待评估候选人", // Default title
+          experience: "经验待解析",
+          education: "学历待解析", // Added missing field
+          location: "地点待解析",
+          salary: "薪资面议",
+          status: "active", // Added missing field
+          tags: aiTags.length > 0 ? aiTags : ["待标签"],
+          matchScore: 0, // Initial score
+          avatar: "/images/avatar_male.png", // Default avatar
+          summary: text.substring(0, 150) + "...", // Use beginning of text as summary
+          details: { // Nested under details
+            workHistory: [
+              {
+                company: "待解析公司",
+                period: "待解析时间",
+                role: "待解析职位",
+                description: text.substring(0, 300) // Raw text as description for now
+              }
+            ],
+            education: [ // Changed to array
+              {
+                school: "待解析学校",
+                degree: "待解析学历",
+                period: "待解析时间"
+              }
+            ],
+            skills: aiTags // Added skills
+          },
+          aiEvaluation: {
+            score: 75,
+            summary: "新导入简历，等待进一步详细分析。",
+            pros: aiTags.map(t => `具备 ${t} 技能`),
+            cons: ["简历信息需人工核对"],
+            suggestion: "建议安排初步沟通以核实信息。" // Changed advice to suggestion
+          }
+        };
+
+        setCandidateList(prev => [newCandidate, ...prev]);
+        setSelectedId(newCandidate.id); // Select the new candidate
         toast.success(`成功导入候选人: ${file.name}`);
         toast.info(`AI 自动提取标签: ${aiTags.join(", ") || "无"}`);
-        console.log("Parsed text:", text.substring(0, 200));
       }
     } catch (error) {
       console.error("Import failed:", error);
@@ -318,7 +372,7 @@ export default function SimpleView() {
                         onSelect={(d) => {
                           setDate(d);
                           if (d) {
-                            toast.success(`已安排面试: ${format(d, "yyyy-MM-dd")}`, {
+                            toast.success(`已安排面试: ${format(d, "yyyy年MM月dd日", { locale: zhCN })}`, {
                               description: `候选人: ${selectedCandidate?.name}`,
                               action: {
                                 label: "撤销",
@@ -327,6 +381,7 @@ export default function SimpleView() {
                             });
                           }
                         }}
+                        locale={zhCN}
                         initialFocus
                       />
                     </PopoverContent>
