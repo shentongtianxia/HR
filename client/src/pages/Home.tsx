@@ -4,13 +4,28 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Loader2, Search, Sparkles, User, Briefcase, MapPin, DollarSign } from "lucide-react";
+import { Loader2, Search, Sparkles, User, Briefcase, MapPin, DollarSign, Plus } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function Home() {
   const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importFormData, setImportFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    position: "",
+    yearsOfExperience: 0,
+    location: "",
+    expectedSalary: "",
+    summary: "",
+  });
 
   // 获取候选人列表
   const { data: candidates, isLoading: candidatesLoading } = trpc.candidates.list.useQuery();
@@ -29,6 +44,29 @@ export default function Home() {
 
   // 生成AI评价
   const generateEvaluation = trpc.candidates.generateEvaluation.useMutation();
+
+  // 导入候选人
+  const utils = trpc.useUtils();
+  const importCandidate = trpc.candidates.importCandidate.useMutation({
+    onSuccess: () => {
+      toast.success("候选人导入成功！");
+      setImportDialogOpen(false);
+      setImportFormData({
+        name: "",
+        email: "",
+        phone: "",
+        position: "",
+        yearsOfExperience: 0,
+        location: "",
+        expectedSalary: "",
+        summary: "",
+      });
+      utils.candidates.list.invalidate();
+    },
+    onError: (error) => {
+      toast.error("导入失败：" + error.message);
+    },
+  });
 
   // 筛选候选人
   const filteredCandidates = useMemo(() => {
@@ -77,6 +115,120 @@ export default function Home() {
             <Badge variant="outline" className="text-xs">
               共 {candidates?.length || 0} 位候选人
             </Badge>
+            <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  导入候选人
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>导入候选人信息</DialogTitle>
+                </DialogHeader>
+                <div className="grid gap-4 py-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="name">姓名 *</Label>
+                      <Input
+                        id="name"
+                        value={importFormData.name}
+                        onChange={(e) => setImportFormData({ ...importFormData, name: e.target.value })}
+                        placeholder="请输入姓名"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="position">应聘职位 *</Label>
+                      <Input
+                        id="position"
+                        value={importFormData.position}
+                        onChange={(e) => setImportFormData({ ...importFormData, position: e.target.value })}
+                        placeholder="请输入应聘职位"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">邮箱</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={importFormData.email}
+                        onChange={(e) => setImportFormData({ ...importFormData, email: e.target.value })}
+                        placeholder="请输入邮箱"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">电话</Label>
+                      <Input
+                        id="phone"
+                        value={importFormData.phone}
+                        onChange={(e) => setImportFormData({ ...importFormData, phone: e.target.value })}
+                        placeholder="请输入电话"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="experience">工作年限</Label>
+                      <Input
+                        id="experience"
+                        type="number"
+                        value={importFormData.yearsOfExperience}
+                        onChange={(e) => setImportFormData({ ...importFormData, yearsOfExperience: parseInt(e.target.value) || 0 })}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="location">所在地</Label>
+                      <Input
+                        id="location"
+                        value={importFormData.location}
+                        onChange={(e) => setImportFormData({ ...importFormData, location: e.target.value })}
+                        placeholder="请输入所在地"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="salary">期望薪资</Label>
+                      <Input
+                        id="salary"
+                        value={importFormData.expectedSalary}
+                        onChange={(e) => setImportFormData({ ...importFormData, expectedSalary: e.target.value })}
+                        placeholder="如：10-15K"
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="summary">个人总结</Label>
+                    <Textarea
+                      id="summary"
+                      value={importFormData.summary}
+                      onChange={(e) => setImportFormData({ ...importFormData, summary: e.target.value })}
+                      placeholder="请输入个人总结、工作经历或技能特长..."
+                      rows={6}
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setImportDialogOpen(false)}>
+                    取消
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (!importFormData.name || !importFormData.position) {
+                        toast.error("请填写姓名和应聘职位！");
+                        return;
+                      }
+                      importCandidate.mutate(importFormData);
+                    }}
+                    disabled={importCandidate.isPending}
+                  >
+                    {importCandidate.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    确认导入
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </header>

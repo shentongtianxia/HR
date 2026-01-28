@@ -225,3 +225,105 @@ export async function upsertAiEvaluation(evaluation: {
     },
   });
 }
+
+
+/**
+ * 导入候选人信息
+ */
+export async function importCandidate(data: {
+  name: string;
+  phone?: string;
+  email?: string;
+  position: string;
+  yearsOfExperience?: number;
+  location?: string;
+  expectedSalary?: string;
+  summary?: string;
+  workExperiences?: Array<{
+    company: string;
+    position: string;
+    startDate?: string;
+    endDate?: string;
+    description?: string;
+    achievements?: string;
+  }>;
+  educations?: Array<{
+    school: string;
+    degree?: string;
+    major?: string;
+    startDate?: string;
+    endDate?: string;
+  }>;
+  skills?: Array<{
+    name: string;
+    level?: "beginner" | "intermediate" | "advanced" | "expert";
+  }>;
+}): Promise<number> {
+  const db = await getDb();
+  if (!db) {
+    throw new Error("Database not available");
+  }
+
+  try {
+    // 插入候选人基本信息
+    const [candidateResult] = await db.insert(candidates).values({
+      name: data.name,
+      phone: data.phone,
+      email: data.email,
+      position: data.position,
+      yearsOfExperience: data.yearsOfExperience,
+      location: data.location,
+      expectedSalary: data.expectedSalary,
+      summary: data.summary,
+      status: 'pending',
+      matchScore: '0', // 初始匹配度为0，后续可通过AI评价更新
+    });
+
+    const candidateId = candidateResult.insertId;
+
+    // 插入工作经历
+    if (data.workExperiences && data.workExperiences.length > 0) {
+      await db.insert(workExperiences).values(
+        data.workExperiences.map(exp => ({
+          candidateId,
+          company: exp.company,
+          position: exp.position,
+          startDate: exp.startDate,
+          endDate: exp.endDate,
+          description: exp.description,
+          achievements: exp.achievements,
+        }))
+      );
+    }
+
+    // 插入教育背景
+    if (data.educations && data.educations.length > 0) {
+      await db.insert(educations).values(
+        data.educations.map(edu => ({
+          candidateId,
+          school: edu.school,
+          degree: edu.degree,
+          major: edu.major,
+          startDate: edu.startDate,
+          endDate: edu.endDate,
+        }))
+      );
+    }
+
+    // 插入技能标签
+    if (data.skills && data.skills.length > 0) {
+      await db.insert(skills).values(
+        data.skills.map(skill => ({
+          candidateId,
+          name: skill.name,
+          level: skill.level || 'intermediate',
+        }))
+      );
+    }
+
+    return candidateId;
+  } catch (error) {
+    console.error("[Database] Failed to import candidate:", error);
+    throw error;
+  }
+}

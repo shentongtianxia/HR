@@ -3,7 +3,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
-import { getCandidates, getCandidateDetail, getCandidateSkills, getAiEvaluation, upsertAiEvaluation } from "./db";
+import { getCandidates, getCandidateDetail, getCandidateSkills, getAiEvaluation, upsertAiEvaluation, importCandidate } from "./db";
 import { invokeLLM } from "./_core/llm";
 
 export const appRouter = router({
@@ -190,6 +190,52 @@ ${skills.map(s => `${s.name}(${s.level})`).join('、')}
         });
 
         return evaluation;
+      }),
+
+    /**
+     * 导入候选人信息
+     */
+    importCandidate: publicProcedure
+      .input(
+        z.object({
+          name: z.string().min(1, "姓名不能为空"),
+          phone: z.string().optional(),
+          email: z.string().email("邮箱格式不正确").optional(),
+          position: z.string().min(1, "应聘职位不能为空"),
+          yearsOfExperience: z.number().min(0).optional(),
+          location: z.string().optional(),
+          expectedSalary: z.string().optional(),
+          summary: z.string().optional(),
+          workExperiences: z.array(
+            z.object({
+              company: z.string().min(1, "公司名称不能为空"),
+              position: z.string().min(1, "职位不能为空"),
+              startDate: z.string().optional(),
+              endDate: z.string().optional(),
+              description: z.string().optional(),
+              achievements: z.string().optional(),
+            })
+          ).optional(),
+          educations: z.array(
+            z.object({
+              school: z.string().min(1, "学校名称不能为空"),
+              degree: z.string().optional(),
+              major: z.string().optional(),
+              startDate: z.string().optional(),
+              endDate: z.string().optional(),
+            })
+          ).optional(),
+          skills: z.array(
+            z.object({
+              name: z.string().min(1, "技能名称不能为空"),
+              level: z.enum(["beginner", "intermediate", "advanced", "expert"]).optional(),
+            })
+          ).optional(),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const candidateId = await importCandidate(input);
+        return { success: true, candidateId };
       }),
   }),
 });
